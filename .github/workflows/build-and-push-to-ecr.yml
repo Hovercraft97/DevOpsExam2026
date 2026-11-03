@@ -45,3 +45,39 @@ jobs:
           docker push $IMAGE:$TAG
           docker push $IMAGE:latest
           echo "Pushed $IMAGE:$TAG" >> "$GITHUB_STEP_SUMMARY"
+
+  terraform:
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with: 
+          terraform_version: 1.10.5
+    
+      - name: Terraform formatering
+        run: terraform fmt -check -recursive -diff
+    
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+        
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -input=false -out=tfplan -var="image_tag=${{ needs.build.outputs.image_tag }}"
+
+      - name: Terraform apply
+        run: terraform apply -input=false -auto-approve tfplan

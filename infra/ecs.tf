@@ -19,8 +19,10 @@ resource "aws_ecs_express_gateway_service" "wishifai" {
   }
 
   scaling_target {
-    min_task_count = 1
-    max_task_count = 2
+    min_task_count            = 1
+    max_task_count            = 2
+    auto_scaling_metric       = "AVERAGE_CPU"
+    auto_scaling_target_value = 60
   }
 
   wait_for_steady_state = true

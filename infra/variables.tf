@@ -24,12 +24,12 @@ variable "ecr_repository" {
 
 variable "execution_role_arn" {
   description = "henter image fra ECR, skriver logger"
-  type    = string
-  default = "arn:aws:iam::244530008913:role/ecsTaskExecutionRole"
+  type        = string
+  default     = "arn:aws:iam::244530008913:role/ecsTaskExecutionRole"
 }
 
 variable "infrastructure_role_arn" {
   description = "Infrastructure role for ECS Express"
-  type    = string
-  default = "arn:aws:iam::244530008913:role/service-role/ecsInfrastructureRoleForExpressServices"
+  type        = string
+  default     = "arn:aws:iam::244530008913:role/service-role/ecsInfrastructureRoleForExpressServices"
 }

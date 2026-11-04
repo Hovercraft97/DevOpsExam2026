@@ -8,23 +8,31 @@ import software.amazon.awssdk.services.rekognition.model.DetectLabelsResponse;
 import software.amazon.awssdk.services.rekognition.model.Image;
 import software.amazon.awssdk.services.rekognition.model.Label;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+
 import java.util.List;
 
 @Service
 public class RekognitionService {
 
     private final RekognitionClient client;
+    private final Timer rekognitionTimer;
 
-    public RekognitionService(RekognitionClient client) {
+    public RekognitionService(RekognitionClient client, MeterRegistry registry) {
         this.client = client;
+        this.rekognitionTimer = Timer.builder("wishifai.rekognition.duration")
+            .description("Tid brukt på Rekognition DetectLabels-kallet")
+            .register(registry);
     }
 
     public List<String> detectLabels(byte[] bytes) {
-        DetectLabelsResponse resp = client.detectLabels(DetectLabelsRequest.builder()
+        DetectLabelsResponse resp = rekognitionTimer.record(() ->
+            client.detectLabels(DetectLabelsRequest.builder()
                 .image(Image.builder().bytes(SdkBytes.fromByteArray(bytes)).build())
                 .maxLabels(20)
                 .minConfidence(70f)
-                .build());
+                .build()));
 
         return resp.labels().stream().map(Label::name).toList();
     }

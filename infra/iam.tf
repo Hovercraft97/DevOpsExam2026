@@ -36,6 +36,18 @@ data "aws_iam_policy_document" "task_permissions" {
       "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
     ]
   }
+
+  statement {
+    sid       = "CloudWatchMetrics"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = [local.metrics_namespace]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "task_permissions" {

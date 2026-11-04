@@ -16,6 +16,11 @@ resource "aws_ecs_express_gateway_service" "wishifai" {
       name  = "S3_BUCKET"
       value = aws_s3_bucket.images.bucket
     }
+
+    environment {
+      name  = "METRICS_NAMESPACE"
+      value = local.metrics_namespace
+    }
   }
 
   scaling_target {

@@ -17,3 +17,6 @@
 ## 2C - Terraform begrunnelse
 ### Hvorfor er det fornuftig at Terraform kjører etter container-build, og ikke parallelt eller før?
 - Imaget må finnes i ECR før Terraform kan deploye det.
+
+## 3A - Metrikker
+### 

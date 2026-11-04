@@ -19,4 +19,23 @@
 - Imaget må finnes i ECR før Terraform kan deploye det.
 
 ## 3A - Metrikker
-### 
+Alle metrikker publiseres til CloudWatch-namespacet `wishifai-8`.
+
+### Konfigurasjon
+- **Namespace:** Var tomt i `MetricsConfig`, og da ble ingen metrikker publisert. Det settes nå fra Terraform (`local.metrics_namespace`) via miljøvariabelen `METRICS_NAMESPACE`, slik at appen og IAM bruker samme verdi.
+- **Task-rollen:** Har fått `cloudwatch:PutMetricData`, begrenset med `condition` til eget namespace (minste privilegium).
+
+### Tekniske metrikker
+- `wishifai.rekognition.duration` (`Timer`) måler tiden Rekognition-kallet tar.
+- `wishifai.bedrock.duration` (`Timer`) måler tiden Bedrock-kallet tar.
+- Kun selve AWS-kallene måles, ikke prompt-bygging eller parsing, slik at tallene viser AWS-tjenestenes svartid.
+
+### Business-metrikk: `wishifai.gift.suggestions` (`DistributionSummary`)
+Registrerer antall gaveforslag for hver fullførte analyse.
+- `.count` gir antall bilder analysert og viser hvor mye tjenesten brukes.
+- `.sum` gir totalt antall gaveforslag generert.
+- `.avg` gir gjennomsnittlig antall forslag pr. analyse.
+
+**Hvorfor:** Metrikken måler hva tjenesten faktisk leverer til brukerne, ikke bare om den kjører. Hver analyse koster penger i Rekognition- og Bedrock-kall. Ved å sammenligne `.count` med AWS-kostnadene kan man se hva hver leverte gaveliste koster, og vurdere om tjenesten er lønnsom.
+
+**Hvorfor i `WishlistService`:** Tjenesten bestemmer rekkefølgen og sender data mellom S3, Rekognition og Bedrock. Den er derfor det eneste stedet som vet at en hel analyse er fullført.

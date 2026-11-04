@@ -12,6 +12,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,11 +27,16 @@ public class BedrockService {
 
     private final BedrockRuntimeClient client;
     private final String modelId;
+    private final Timer bedrockTimer;
 
     public BedrockService(BedrockRuntimeClient client,
-                          @Value("${app.bedrock.model-id}") String modelId) {
+                          @Value("${app.bedrock.model-id}") String modelId, 
+                          MeterRegistry registry) {
         this.client = client;
         this.modelId = modelId;
+        this.bedrockTimer = Timer.builder("wishifai.bedrock.duration")
+            .description("Tid brukt på Bedrock Converse-kallet")
+            .register(registry);
     }
 
     /**
@@ -86,13 +94,14 @@ public class BedrockService {
                 }
                 """.formatted(String.join(", ", labels));
 
-        ConverseResponse resp = client.converse(ConverseRequest.builder()
+        ConverseResponse resp = bedrockTimer.record(() ->
+            client.converse(ConverseRequest.builder()
                 .modelId(modelId)
                 .messages(Message.builder()
                         .role(ConversationRole.USER)
                         .content(ContentBlock.fromText(prompt))
                         .build())
-                .build());
+                .build()));
 
         String text = resp.output().message().content().get(0).text();
         return parseAnalysis(text);

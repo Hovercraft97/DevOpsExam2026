@@ -62,7 +62,7 @@ resource "aws_cloudwatch_dashboard" "wishifai" {
         "title": "CPU-bruk (%)",
         "yAxis": { "left": { "min": 0, "max": 100 } },
         "annotations": {
-          "horizontal": [ { "label": "Autoskalering (60 %)", "value": 60 } ]
+          "horizontal": [ { "label": "Autoskalering (%)", "value": 60 } ]
         }
       }
     },

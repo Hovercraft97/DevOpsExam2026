@@ -57,3 +57,8 @@ Registrerer antall gaveforslag for hver fullførte analyse.
 
 ### Hvorfor denne sammensetningen
 Radene skal sammen svare på hvor tiden blir av. Er HTTP-latensen høy mens CPU, minne og GC er lave, ligger flaskehalsen i de eksterne AWS-kallene og ikke i containeren eller JVM-en.
+
+### Alarm: `wishifai-8-bedrock-latency-high`
+- **Hva:** Går når snittet av `wishifai.bedrock.duration.avg` er over 20 000 ms i 3 av 5 minutter.
+- **Hvorfor:** Bedrock står for ca. 15,4 av 18 sekunder på `/api/analyze`, og er derfor der treghet mest sannsynlig oppstår.
+- **Terskel:** 20 s fanger reell forverring uten å reagere på vanlige svingninger.

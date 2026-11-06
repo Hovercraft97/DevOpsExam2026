@@ -39,3 +39,9 @@ variable "ecs_cluster_name" {
   type        = string
   default     = "default"
 }
+
+variable "bedrock_latency_threshold_ms" {
+  description = "Gjennomsnittlig Bedrock-svartid i ms før alarmen går"
+  type        = number
+  default     = 20000
+}

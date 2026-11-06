@@ -33,3 +33,9 @@ variable "infrastructure_role_arn" {
   type        = string
   default     = "arn:aws:iam::244530008913:role/service-role/ecsInfrastructureRoleForExpressServices"
 }
+
+variable "ecs_cluster_name" {
+  description = "ECS-clusteret Express-tjenesten kjører i"
+  type        = string
+  default     = "default"
+}

@@ -30,7 +30,8 @@ Alle metrikker publiseres til CloudWatch-namespacet `wishifai-8`.
 - `wishifai.bedrock.duration` (`Timer`) måler tiden Bedrock-kallet tar.
 - Kun selve AWS-kallene måles, ikke prompt-bygging eller parsing, slik at tallene viser AWS-tjenestenes svartid.
 
-### Business-metrikk: `wishifai.gift.suggestions` (`DistributionSummary`)
+### Business-metrikk: 
+`wishifai.gift.suggestions` (`DistributionSummary`)
 Registrerer antall gaveforslag for hver fullførte analyse.
 - `.count` gir antall bilder analysert og viser hvor mye tjenesten brukes.
 - `.sum` gir totalt antall gaveforslag generert.

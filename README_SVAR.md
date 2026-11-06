@@ -40,3 +40,20 @@ Registrerer antall gaveforslag for hver fullførte analyse.
 **Hvorfor:** Metrikken måler hva tjenesten faktisk leverer til brukerne, ikke bare om den kjører. Hver analyse koster penger i Rekognition- og Bedrock-kall. Ved å sammenligne `.count` med AWS-kostnadene kan man se hva hver leverte gaveliste koster, og vurdere om tjenesten er lønnsom.
 
 **Hvorfor i `WishlistService`:** Tjenesten bestemmer rekkefølgen og sender data mellom S3, Rekognition og Bedrock. Den er derfor det eneste stedet som vet at en hel analyse er fullført.
+
+## 3B - Dashboard og alarm
+### Business
+- `wishifai.gift.suggestions.count` (Sum pr. 5 min) viser hvor mange bilder som analyseres, altså hvor mye tjenesten brukes.
+- `wishifai.gift.suggestions.avg` viser antall gaveforslag pr. analyse. Den ligger stabilt på 5 fordi prompten ber om inntil 5 forslag. Et fall betyr at Bedrock gir færre eller ugyldige svar (appen faller da tilbake til ett "(ukjent format)"-forslag). Det er en kvalitetsfeil som ikke vises som teknisk feil.
+
+### Infrastruktur
+- `CPUUtilization` og `MemoryUtilization` viser om containeren har nok ressurser. CPU-grafen har en linje på 60 % som tilsvarer autoskaleringsgrensen i `ecs.tf`.
+- `LiveTaskCount` viser antall kjørende tasks, og om autoskaleringen slår inn. `RunningTaskCount` krever Container Insights, som ikke er slått på for clusteret.
+
+### Applikasjon
+- HTTP-latens på `/api/analyze` viser hva brukeren faktisk opplever.
+- JVM heap og GC-tid pr. minutt viser om JVM-en selv er årsaken til treghet.
+- Metrikkene hentes med `SEARCH()` fordi Actuator legger på mange dimensjoner og kombinasjonene er ukjent på forhånd.
+
+### Hvorfor denne sammensetningen
+Radene skal sammen svare på hvor tiden blir av. Er HTTP-latensen høy mens CPU, minne og GC er lave, ligger flaskehalsen i de eksterne AWS-kallene og ikke i containeren eller JVM-en.

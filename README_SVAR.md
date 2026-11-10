@@ -20,7 +20,8 @@
 
 ## 2C - Terraform begrunnelse
 ### Hvorfor er det fornuftig at Terraform kjører etter container-build, og ikke parallelt eller før?
-- Imaget må finnes i ECR før Terraform kan deploye det.
+- Imaget må finnes i ECR før Terraform kan deploye det. Kjører de parallelt eller i motsatt rekkefølge, peker tjenesten på en tag som ikke finnes ennå, og deployen feiler.
+- Med `needs:` får Terraform-jobben image-taggen fra build-jobben, slik at det er den bygde committen som deployes.
 ### Lenke til grønn kjøring:
 - https://github.com/Hovercraft97/DevOpsExam2026/actions/runs/41686312781
 
@@ -61,7 +62,7 @@ Registrerer antall gaveforslag for hver fullførte analyse.
 ### Applikasjon
 - HTTP-latens på `/api/analyze` vises sammen med `wishifai.bedrock.duration` og `wishifai.rekognition.duration` i samme graf. Da ser man hvor stor andel av svartiden brukeren opplever som går til de eksterne AWS-kallene.
 - JVM heap og GC-tid (Garbage collection) pr. minutt viser om JVM-en selv er årsaken til treghet.
-- Metrikkene hentes med `SEARCH()` fordi Actuator legger på mange dimensjoner og kombinasjonene er ukjent på forhånd.
+- HTTP-, heap- og GC-metrikkene hentes med `SEARCH()` fordi Actuator legger på mange dimensjoner og kombinasjonene er ukjent på forhånd.
 
 ### Hvorfor denne sammensetningen
 Radene skal sammen svare på hvor tiden blir av. Er HTTP-latensen høy mens CPU, minne og GC er lave, ligger flaskehalsen i de eksterne AWS-kallene og ikke i containeren eller JVM-en.

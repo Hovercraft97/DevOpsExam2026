@@ -1,4 +1,8 @@
 # Begrunnelser
+## 1A - Docker kommando for å kjøre applikasjonen i en kontainer
+**Test lokalt:** `docker build -t wishifai .; docker run -p 9999:8080 wishifai`
+**Kjør fra ECR:** `docker run -p 9999:8080 244530008913.dkr.ecr.eu-west-1.amazonaws.com/kandidat-8:latest`
+
 ## 1B — CI-pipeline "Tagging strategi"
 ### Benyttet SHA og kuttet den ned til de 7 første tegnene
 - Valgt SHA for å enkelt kunne se hvilken versjon av prosjektet som kjører hvor.
@@ -12,11 +16,11 @@
 
 ## 2B - Valgt nøkkel
 ### Benyttet kandidatnummer
-- ```key = "wishifai/8/terraform.tfstate"```
-- Nøkkelen inneholder kandidatnummeret ```8```, slik at state-filen er unik og ikke kolliderer med andre kandidater i den delte bucketen.
+- `key = "wishifai/8/terraform.tfstate`
+- Nøkkelen inneholder kandidatnummeret `8`, slik at state-filen er unik og ikke kolliderer med andre kandidater i den delte bucketen.
 - Kandidatnummeret er hardkodet i backend-blokken fordi Terraform ikke tillater variabler i backend-konfigurasjon.
-- ```use_lockfile = true``` gir state-låsing direkte i S3, slik at to samtidige kjøringer ikke kan overskrive hverandre.
-- ```encrypt = true``` krypterer state-filen, siden den kan inneholde sensitive verdier.
+- `use_lockfile = true` gir state-låsing direkte i S3, slik at to samtidige kjøringer ikke kan overskrive hverandre.
+- `encrypt = true` krypterer state-filen, siden den kan inneholde sensitive verdier.
 
 ## 2C - Terraform begrunnelse
 ### Hvorfor er det fornuftig at Terraform kjører etter container-build, og ikke parallelt eller før?
@@ -53,7 +57,7 @@ Registrerer antall gaveforslag for hver fullførte analyse.
 ![Dashboard](/media/Dashboard_wishifai-8.png)
 ### Business
 - `wishifai.gift.suggestions.count` (Sum pr. 5 min) viser hvor mange bilder som analyseres, altså hvor mye tjenesten brukes.
-- `wishifai.gift.suggestions.avg` viser antall gaveforslag pr. analyse. Den ligger stabilt på 5 fordi prompten ber om inntil 5 forslag. Et fall betyr at Bedrock gir færre eller ugyldige svar (appen faller da tilbake til ett "(ukjent format)"-forslag). Det er en kvalitetsfeil som ikke vises som teknisk feil.
+- `wishifai.gift.suggestions.avg` viser antall gaveforslag pr. analyse. Den ligger stabilt på 5 fordi prompten ber om inntil 5 forslag. Et fall betyr at Bedrock gir færre eller ugyldige svar (appen faller da tilbake til ett "(ukjent format)"-forslag).
 
 ### Infrastruktur
 - `CPUUtilization` og `MemoryUtilization` viser om containeren har nok ressurser. CPU-grafen har en linje på 60 % som tilsvarer autoskaleringsgrensen i `ecs.tf`.
@@ -71,3 +75,18 @@ Radene skal sammen svare på hvor tiden blir av. Er HTTP-latensen høy mens CPU,
 - **Hva:** Går når snittet av `wishifai.bedrock.duration.avg` er over 20 sekunder i 3 av 5 minutter.
 - **Hvorfor:** Målt over 10 analyser tar `/api/analyze` i snitt 16,4 s, hvorav Bedrock 15,2 s og Rekognition 0,8 s. Bedrock er derfor der treghet mest sannsynlig oppstår (Målingene er tatt en stund etter deployment).
 - **Terskel:** 20 s fanger reell forverring uten å reagere på vanlige svingninger.
+
+## 4 - Drøfteoppgave
+DORA-rapporten (DevOps Research and Assessment) fra 2025 har funnet ut at generativ AI styrker det positive høytytende organisasjoner er gode på, men også forsterker svakheter hos de som sliter og at gevinsten kan relateres til hvor god organisasjonenes grunnleggende praksis er. 
+
+Tester blir skrevet raskere og edge cases relatert til dem blir lettere funnet. Pipelines, Dockerfiler, terraform, feilsøking og forklaring av kryptiske logger er enklere å identifisere og å lage samt å forholde seg til. Alarmer kan bli mer relevante og ikke gå av i flere tjenester når det er én tjeneste som utløser en dominoeffekt av ting som ikke fungerer. 
+
+På en annen side kan generativ AI fort begynne å skrive tester for det koden gjør istedenfor det koden skal gjøre og selv med høy test-dekningsgrad introdusere sikkerhetshull. Utviklingstempoet har økt, men "single piece flow" blir ikke alltid ivaretatt når AI implementerer større endringer for å tilføye lite funksjonalitet. En språkmodell som mangler data kan fort begynne å hallusinere eller gi feil svar basert på gammel eller forringet informasjon og dermed informere om at alt er bra når alarmer egentlig burde gå. 
+
+Løsninger på dette kan være å implementere; tester for sikkerhetshull som scanner etter secrets, mutasjonstesting for å avklare om tester tester faktiske feil, samt å skille mellom spesifikasjon og implementasjon ved å skrive aksepttester og kontrakttester som skrives eller godkjennes fysisk av mennesker før AI evt. genererer implementasjonen.
+DORA rapporten fremhever at små batcher motvirker større mer risikable endringer. Dette kan håndheves med grenser for PR-størrelse eller sammen med/ved at PR-er ikke slipper gjennom med mindre de er godkjente av mennesker samt å gi hver modell begrenset omfang med egne tokens.
+Og når det kommer til overvåkning kan det legges inn som et steg å kreve sporbare bevis mennesker kan gå igjennom før de handler, samt logger som lagrer data om alle agenthandlinger for å måle om AI'ens forslag er riktige over tid. 
+
+Wishifai har kanskje med CI og overvåkning for å sikre drift og lønnsomhet, men det at alarmen går på treghet hjelper lite hvis brukeren avslutter kundeforholdet på basis av aldersupassende eller farlige gaveforslag. Brukeren av Wishifai oppdager lettere at et forslag er dårlig enn ved medisinsk type eller dosering. I medisin og bank spør brukeren nettopp fordi de mangler fagkunnskap og ikke kan vurdere svaret. Med medisin kreves det høyere terskler. Mennesker bør godkjenne endringer av prompt og modell, manuelle gjennomganger bør utføres før endringer havner i produksjon og etterprøvbar logging bør prioriteres. 
+
+Generativ AI fjerner ikke behovet for god DevOps-praksis, men øker kravene til den. Som DORA-rapporten viser, forsterker AI det som allerede finnes. Risiko bør vurderes etter type feil, ikke bare etter domene. Kjedelige gaveforslag kan oppdages i produksjon, men farlige forslag må stoppes før de når brukeren, også i Wishifai. Jo dårligere brukeren selv kan vurdere svaret, desto flere kontroller må ligge før produksjon.

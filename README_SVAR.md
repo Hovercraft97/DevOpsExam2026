@@ -6,6 +6,10 @@
 - De 7 første sifferene i SHA'en gir god nok sannsynlighet for at det ikke oppstår navne-duplikater.
 - "Lenke til grønn kjøring": https://github.com/Hovercraft97/DevOpsExam2026/actions/runs/41096262443
 
+## 2A - Offentlig url til tjenesten
+### Fra Outputs.tf:
+- service_url = "https://wi-cd7933da93df464a8dcae5b5a47dc91e.ecs.eu-west-1.on.aws"
+
 ## 2B - Valgt nøkkel
 ### Benyttet kandidatnummer
 - ```key = "wishifai/8/terraform.tfstate"```
@@ -17,6 +21,8 @@
 ## 2C - Terraform begrunnelse
 ### Hvorfor er det fornuftig at Terraform kjører etter container-build, og ikke parallelt eller før?
 - Imaget må finnes i ECR før Terraform kan deploye det.
+### Lenke til grønn kjøring:
+- https://github.com/Hovercraft97/DevOpsExam2026/actions/runs/41686312781
 
 ## 3A - Metrikker
 Alle metrikker publiseres til CloudWatch-namespacet `wishifai-8`.
@@ -28,7 +34,7 @@ Alle metrikker publiseres til CloudWatch-namespacet `wishifai-8`.
 ### Tekniske metrikker
 - `wishifai.rekognition.duration` (`Timer`) måler tiden Rekognition-kallet tar.
 - `wishifai.bedrock.duration` (`Timer`) måler tiden Bedrock-kallet tar.
-- Kun selve AWS-kallene måles, ikke prompt-bygging eller parsing, slik at tallene viser AWS-tjenestenes svartid.
+- Kun selve AWS-kallene måles, slik at tallene viser AWS-tjenestenes svartid.
 
 ### Business-metrikk: 
 `wishifai.gift.suggestions` (`DistributionSummary`)
@@ -42,23 +48,25 @@ Registrerer antall gaveforslag for hver fullførte analyse.
 **Hvorfor i `WishlistService`:** Tjenesten bestemmer rekkefølgen og sender data mellom S3, Rekognition og Bedrock. Den er derfor det eneste stedet som vet at en hel analyse er fullført.
 
 ## 3B - Dashboard og alarm
+### Dashboard: `wishifai-8` (CloudWatch, eu-west-1)
+![Dashboard](/media/Dashboard_wishifai-8.png)
 ### Business
 - `wishifai.gift.suggestions.count` (Sum pr. 5 min) viser hvor mange bilder som analyseres, altså hvor mye tjenesten brukes.
 - `wishifai.gift.suggestions.avg` viser antall gaveforslag pr. analyse. Den ligger stabilt på 5 fordi prompten ber om inntil 5 forslag. Et fall betyr at Bedrock gir færre eller ugyldige svar (appen faller da tilbake til ett "(ukjent format)"-forslag). Det er en kvalitetsfeil som ikke vises som teknisk feil.
 
 ### Infrastruktur
 - `CPUUtilization` og `MemoryUtilization` viser om containeren har nok ressurser. CPU-grafen har en linje på 60 % som tilsvarer autoskaleringsgrensen i `ecs.tf`.
-- `LiveTaskCount` viser antall kjørende tasks, og om autoskaleringen slår inn. `RunningTaskCount` krever Container Insights, som ikke er slått på for clusteret.
+- `LiveTaskCount` viser antall aktive tasks, og om autoskaleringen slår inn. 
 
 ### Applikasjon
-- HTTP-latens på `/api/analyze` viser hva brukeren faktisk opplever.
-- JVM heap og GC-tid pr. minutt viser om JVM-en selv er årsaken til treghet.
+- HTTP-latens på `/api/analyze` vises sammen med `wishifai.bedrock.duration` og `wishifai.rekognition.duration` i samme graf. Da ser man hvor stor andel av svartiden brukeren opplever som går til de eksterne AWS-kallene.
+- JVM heap og GC-tid (Garbage collection) pr. minutt viser om JVM-en selv er årsaken til treghet.
 - Metrikkene hentes med `SEARCH()` fordi Actuator legger på mange dimensjoner og kombinasjonene er ukjent på forhånd.
 
 ### Hvorfor denne sammensetningen
 Radene skal sammen svare på hvor tiden blir av. Er HTTP-latensen høy mens CPU, minne og GC er lave, ligger flaskehalsen i de eksterne AWS-kallene og ikke i containeren eller JVM-en.
 
 ### Alarm: `wishifai-8-bedrock-latency-high`
-- **Hva:** Går når snittet av `wishifai.bedrock.duration.avg` er over 20 000 ms i 3 av 5 minutter.
-- **Hvorfor:** Bedrock står for ca. 15,4 av 18 sekunder på `/api/analyze`, og er derfor der treghet mest sannsynlig oppstår.
+- **Hva:** Går når snittet av `wishifai.bedrock.duration.avg` er over 20 sekunder i 3 av 5 minutter.
+- **Hvorfor:** Målt over 10 analyser tar `/api/analyze` i snitt 16,4 s, hvorav Bedrock 15,2 s og Rekognition 0,8 s. Bedrock er derfor der treghet mest sannsynlig oppstår (Målingene er tatt en stund etter deployment).
 - **Terskel:** 20 s fanger reell forverring uten å reagere på vanlige svingninger.

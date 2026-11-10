@@ -106,7 +106,7 @@ resource "aws_cloudwatch_dashboard" "wishifai" {
         "period": 60,
         "stat": "Average",
         "region": "${var.aws_region}",
-        "title": "Kjørende tasks",
+        "title": "Aktive tasks",
         "yAxis": { "left": { "min": 0, "max": 3 } }
       }
     },
@@ -134,10 +134,14 @@ resource "aws_cloudwatch_dashboard" "wishifai" {
       "height": 6,
       "properties": {
         "metrics": [
-          [ { "id": "latency", "expression": "SEARCH('{${local.metrics_namespace},error,exception,method,outcome,status,uri} MetricName=\"http.server.requests.avg\" uri=\"/api/analyze\"', 'Average', 60)" } ]
+          [ { "id": "latency", "label": "HTTP /api/analyze", "expression": "SEARCH('{${local.metrics_namespace},error,exception,method,outcome,status,uri} MetricName=\"http.server.requests.avg\" uri=\"/api/analyze\"', 'Average', 60)" } ],
+          [ "${local.metrics_namespace}", "wishifai.bedrock.duration.avg", { "id": "bedrock", "label": "Bedrock" } ],
+          [ "${local.metrics_namespace}", "wishifai.rekognition.duration.avg", { "id": "rekognition", "label": "Rekognition" } ]
         ],
+        "period": 60,
+        "stat": "Average",
         "region": "${var.aws_region}",
-        "title": "HTTP-latens /api/analyze (ms)",
+        "title": "Svartid: /api/analyze, Bedrock og Rekognition (ms)",
         "yAxis": { "left": { "min": 0 } }
       }
     },
